@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAIAD - Gestore</title>
+    <!-- Tailwind CSS -->
+    <!--link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet"-->
+    <link href="tailwind.min.css" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <!--script src="https://unpkg.com/lucide@latest"></script-->
+    <script src="lucide.min.js"></script>
+    <style>
+
+        .app-container {
+            height: 100vh;
+            max-height: 100vh;
+            padding: 1rem;
+            background-color: rgb(243, 244, 246);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .items-grid {
+            flex: 1;
+            display: grid;
+            grid-template-rows: repeat(9, minmax(0, 1fr));
+            gap: 0.75rem;
+            padding: 1rem;
+            overflow: hidden;
+        }
+
+        .card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .item-container {
+            display: grid;
+            gap: 1rem; /* Aumentato lo spazio tra gli elementi */
+            padding: 1.5rem; /* Aumentato il padding */
+        }
+
+        .selected-for-playback {
+            background-color: rgb(219, 234, 254);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            max-width: 28rem;
+            width: 100%;
+        }
+
+        /* Stili aggiornati per pulsanti più grandi */
+        .icon-button {
+            padding: 1rem; /* Aumentato il padding */
+            border-radius: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+            min-width: 3.5rem; /* Larghezza minima aumentata */
+            min-height: 3.5rem; /* Altezza minima aumentata */
+        }
+
+        .icon-button i {
+            width: 1.75rem !important; /* Icone più grandi */
+            height: 1.75rem !important;
+        }
+
+        .icon-button:hover:not(:disabled) {
+            background-color: rgb(243, 244, 246);
+        }
+
+        .icon-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Colori per i tipi di sessione */
+        .session-chat { color: rgb(59, 130, 246); }
+        .session-exploration { color: rgb(139, 92, 246); }
+        .session-creative_writing { color: rgb(34, 197, 94); }
+        .session-article_writing { color: rgb(249, 115, 22); }
+        .session-translation { color: rgb(239, 68, 68); }
+
+        /* Stili aggiornati per elementi della lista */
+        .list-item {
+            padding: 1.25rem; /* Padding aumentato */
+            margin-bottom: 1rem;
+            border-radius: 0.75rem;
+            border: 2px solid #e5e7eb;
+        }
+
+        .list-item:hover {
+            border-color: #93c5fd;
+        }
+
+        /* Stili per i pulsanti di azione */
+        .action-button {
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="max-w-4xl mx-auto h-full flex flex-col">
+            <div class="card">
+                <!-- Header -->
+                <div class="flex items-center justify-between p-4 border-b">
+                    <div class="flex items-center space-x-4">
+                        <h1 id="view-title" class="text-xl font-bold">Artefatti</h1>
+                        <span id="total-count" class="text-sm text-gray-500">(0 totali)</span>
+                        <button id="toggle-view" class="flex items-center gap-2 px-3 py-1 text-sm border rounded-md hover:bg-gray-50">
+                            <i data-lucide="message-square" class="w-4 h-4"></i>
+                            <span>Mostra Chat</span>
+                        </button>
+                    </div>
+
+                    <!-- Controlli Audio Globali -->
+                    <div class="flex items-center space-x-2">
+                        <button id="global-mute" class="icon-button" title="Mute/Unmute">
+                            <i data-lucide="volume-2" class="w-4 h-4"></i>
+                        </button>
+                        <button id="global-stop" class="icon-button" title="Stop">
+                            <i data-lucide="square" class="w-4 h-4"></i>
+                        </button>
+                        <span id="page-info" class="text-sm text-gray-500 ml-4">Pagina 1</span>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex justify-center space-x-4 py-2 flex-shrink-0">    
+                    <div class="flex space-x-2">
+                        <button id="prev-page" class="icon-button" disabled>
+                            <i data-lucide="arrow-up" class="w-4 h-4"></i>
+                        </button>
+                        <button id="next-page" class="icon-button" disabled>
+                            <i data-lucide="arrow-down" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="restart-playback" class="icon-button" disabled>
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Items List -->
+                <div id="items-list" class="items-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div id="delete-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex items-center mb-4">
+                <i data-lucide="alert-triangle" class="w-6 h-6 text-red-500 mr-2"></i>
+                <h3 class="text-lg font-semibold">Conferma eliminazione</h3>
+            </div>
+            <p id="delete-message" class="mb-4"></p>
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeDeleteModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">
+                    Annulla
+                </button>
+                <button onclick="confirmDelete()" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                    Elimina
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mappa delle emoji per fallback
+        const emojiMap = {
+            'message-square': '💬',
+            'folder-archive': '📁',
+            'volume-2': '🔊',
+            'volume-x': '🔇',
+            'square': '⏹',
+            'rotate-ccw': '🔄',
+            'arrow-up': '⬆️',
+            'arrow-down': '⬇️',
+            'calendar': '📅',
+            'play': '▶️',
+            'feather': '✒️',
+            'pen-tool': '✏️',
+            'trash-2': '🗑️',
+            'alert-triangle': '⚠️',
+            'message-circle': '💭',
+            'search': '🔍',
+            'languages': '🌐'
+        };
+
+        // Configurazione
+        const ITEMS_PER_PAGE = 5;
+        const sessionTypes = {
+            chat: { name: "Chat", icon: "message-circle", color: "session-chat" },
+            exploration: { name: "Esplorazione", icon: "search", color: "session-exploration" },
+            creative_writing: { name: "Scrittura Creativa", icon: "feather", color: "session-creative_writing" },
+            article_writing: { name: "Scrittura Articoli", icon: "pen-tool", color: "session-article_writing" },
+            translation: { name: "Traduzione", icon: "languages", color: "session-translation" }
+        };
+
+        // Stato
+        const state = {
+            view: 'artifacts',
+            items: [],
+            currentPage: 0,
+            selectedItemForDelete: null,
+            currentPlayingIndex: null,
+            isPlaying: false,
+            isMuted: false
+        };
+
+        // Elementi DOM
+        const elements = {
+            viewTitle: document.getElementById('view-title'),
+            toggleView: document.getElementById('toggle-view'),
+            totalCount: document.getElementById('total-count'),
+            pageInfo: document.getElementById('page-info'),
+            prevPage: document.getElementById('prev-page'),
+            nextPage: document.getElementById('next-page'),
+            globalMute: document.getElementById('global-mute'),
+            globalStop: document.getElementById('global-stop'),
+            restartPlayback: document.getElementById('restart-playback'),
+            itemsList: document.getElementById('items-list'),
+            deleteModal: document.getElementById('delete-modal'),
+            deleteMessage: document.getElementById('delete-message')
+        };
+
+        // Funzioni Helper
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleString('it-IT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Funzione per sostituire le icone con emoji
+        function replaceIconsWithEmoji() {
+            document.querySelectorAll('[data-lucide]').forEach(el => {
+                const iconType = el.getAttribute('data-lucide');
+                el.textContent = emojiMap[iconType] || '❓';
+                el.className = el.className.replace('w-4 h-4', '');
+            });
+        }
+
+        async function loadItems() {
+            try {
+                const result = state.view === 'artifacts' 
+                    ? await window.pywebview.api.list_artifacts()
+                    : await window.pywebview.api.list_chats();
+                
+                state.items = result || [];
+                state.currentPage = 0;
+                
+                // Lettura automatica dopo il caricamento iniziale
+                //await readCurrentPage();
+                updateUI();
+            } catch (error) {
+                console.error('Error loading items:', error);
+                state.items = [];
+                updateUI();
+            }
+        }
+
+        
+        async function readCurrentPage() {
+            try {
+                // Ferma qualsiasi riproduzione in corso
+                await handleGlobalAudio('stop');
+                
+                // Ottiene gli elementi della pagina corrente
+                const pageItems = getCurrentPageItems();
+                
+                // Chiama l'API appropriata in base alla vista corrente
+                if (state.view === 'artifacts') {
+                    await window.pywebview.api.read_artifacts_page(pageItems, state.items.length);
+                } else {
+                    await window.pywebview.api.read_chats_page(pageItems, state.items.length);
+                }
+                
+                // Aggiorna lo stato di riproduzione
+                state.isPlaying = true;
+                state.currentPlayingIndex = null; // Reset dell'indice perché stiamo leggendo la pagina intera
+                updateUI();
+            } catch (error) {
+                console.error('Error reading current page:', error);
+            }
+        }
+
+        async function previousPage() {
+            if (state.currentPage > 0) {
+                await handleGlobalAudio('stop');
+                state.currentPage--;
+                await readCurrentPage(); // Lettura automatica della nuova pagina
+                updateUI();
+            }
+        }
+
+        async function nextPage() {
+            const totalPages = Math.ceil(state.items.length / ITEMS_PER_PAGE);
+            if (state.currentPage < totalPages - 1) {
+                await handleGlobalAudio('stop');
+                state.currentPage++;
+                await readCurrentPage(); // Lettura automatica della nuova pagina
+                updateUI();
+            }
+        }
+
+    
+
+        function getCurrentPageItems() {
+            const start = state.currentPage * ITEMS_PER_PAGE;
+            return state.items.slice(start, start + ITEMS_PER_PAGE);
+        }
+
+        async function handleGlobalAudio(action) {
+            try {
+                switch(action) {
+                    case 'mute':
+                        if (!state.isMuted) {
+                            await window.pywebview.api.tts_mute();
+                            state.isMuted = true;
+                        }
+                        break;
+                    case 'unmute':
+                        if (state.isMuted) {
+                            await window.pywebview.api.tts_unmute();
+                            state.isMuted = false;
+                        }
+                        break;
+                    case 'stop':
+                        await window.pywebview.api.tts_stop();
+                        state.isPlaying = false;
+                        state.currentPlayingIndex = null;
+                        break;
+                    case 'restart':
+                        await readCurrentPage();
+                        break;
+                }
+                updateUI();
+            } catch (error) {
+                console.error('Error controlling global audio:', error);
+            }
+        }
+
+        
+        async function handlePlayback(index, number) {
+            if (state.isMuted) return;
+            
+            try {
+                if (state.currentPlayingIndex === index) {
+                    if (state.isPlaying) {
+                        await window.pywebview.api.tts_pause();
+                        state.isPlaying = false;
+                    } else {
+                        await window.pywebview.api.tts_resume();
+                        state.isPlaying = true;
+                    }
+                } else {
+                    await window.pywebview.api.tts_stop();
+                    state.currentPlayingIndex = index;
+                    if (state.view === 'artifacts') {
+                        await window.pywebview.api.read_artifact(number);
+                    } else {
+                        await window.pywebview.api.read_chat(number);
+                    }
+                    state.isPlaying = true;
+                }
+                updateUI();
+            } catch (error) {
+                console.error('Error controlling playback:', error);
+            }
+        }
+
+        async function handleResume(number, mode) {
+            try {
+                if (state.view === 'artifacts') {
+                    if (mode === 'creative') {
+                        await window.pywebview.api.resume_creative_artifact(number);
+                    } else {
+                        await window.pywebview.api.resume_article_artifact(number);
+                    }
+                } else {
+                    await window.pywebview.api.resume_chat(number);
+                }
+            } catch (error) {
+                console.error('Error resuming item: ${number}', error);
+            }
+        }
+
+        function showDeleteModal(number, name) {
+            state.selectedItemForDelete = number;
+            elements.deleteMessage.textContent = 
+                `Sei sicuro di voler eliminare ${state.view === 'artifacts' ? "l'artefatto" : "la chat"} "${name}"?`;
+            elements.deleteModal.classList.add('show');
+        }
+
+        function closeDeleteModal() {
+            state.selectedItemForDelete = null;
+            elements.deleteModal.classList.remove('show');
+        }
+
+        async function confirmDelete() {
+            if (!state.selectedItemForDelete) return;
+            
+            try {
+                const result = state.view === 'artifacts'
+                    ? await window.pywebview.api.delete_artifact(state.selectedItemForDelete)
+                    : await window.pywebview.api.delete_chat(state.selectedItemForDelete);
+                
+                if (result.success) {
+                    await loadItems();
+                }
+                closeDeleteModal();
+            } catch (error) {
+                console.error('Error deleting item:', error);
+            }
+        }
+
+        function updateUI() {
+            // Update header
+            elements.viewTitle.textContent = state.view === 'artifacts' ? 'Artefatti' : 'Chat';
+            elements.toggleView.innerHTML = `
+                <i data-lucide="${state.view === 'artifacts' ? 'message-square' : 'folder-archive'}" class="w-4 h-4"></i>
+                <span>Mostra ${state.view === 'artifacts' ? 'Chat' : 'Artefatti'}</span>
+            `;
+            elements.totalCount.textContent = `(${state.items.length} totali)`;
+            elements.pageInfo.textContent = `Pagina ${state.currentPage + 1}`;
+
+            // Update navigation
+            elements.prevPage.disabled = state.currentPage === 0;
+            elements.nextPage.disabled = 
+                state.currentPage >= Math.ceil(state.items.length / ITEMS_PER_PAGE) - 1;
+
+            // Update audio controls
+            elements.globalMute.innerHTML = `
+                <i data-lucide="${state.isMuted ? 'volume-x' : 'volume-2'}" class="w-4 h-4"></i>
+            `;
+            //elements.restartPlayback.disabled = state.currentPlayingIndex === null;
+            // Update restart button - ora non è più disabilitato in base al currentPlayingIndex
+            elements.restartPlayback.disabled = false;
+
+            // Update items list
+            const pageItems = getCurrentPageItems();
+            elements.itemsList.innerHTML = pageItems.map((item, index) => `
+                <div class="flex items-center p-3 rounded-lg border hover:bg-gray-50 
+                    ${state.currentPlayingIndex === index ? 'selected-for-playback' : ''}">
+                    <div class="flex items-center w-24">
+                        <span class="text-2xl font-bold text-blue-600 w-12 flex justify-center">
+                            ${index + 1}
+                        </span>
+                        ${state.view === 'chats' ? `
+                            <i data-lucide="${sessionTypes[item.type]?.icon || 'message-circle'}" 
+                               class="w-4 h-4 ${sessionTypes[item.type]?.color || ''}"></i>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="flex-grow">
+                        <div class="font-medium">${item.name}</div>
+                        <div class="text-sm text-gray-500 flex items-center gap-4">
+                            <span class="flex items-center">
+                                <i data-lucide="calendar" class="w-3 h-3 mr-1"></i>
+                                ${formatDate(item.date)}
+                            </span>
+                            ${state.view === 'chats' ? `
+                                <span class="${sessionTypes[item.type]?.color || ''}">
+                                    ${sessionTypes[item.type]?.name || item.type}
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="handlePlayback(${index}, ${item.number})"
+                                class="icon-button ${state.currentPlayingIndex === index ? 'text-blue-600' : ''}"
+                                ${state.isMuted ? 'disabled' : ''}
+                                title="Riproduci">
+                            <i data-lucide="volume-2" class="w-4 h-4"></i>
+                        </button>
+
+                        ${state.view === 'artifacts' ? `
+                            <button onclick="handleResume(${item.number}, 'creative')"
+                                    class="icon-button"
+                                    title="Modifica Creativa">
+                                <i data-lucide="feather" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="handleResume(${item.number}, 'article')"
+                                    class="icon-button"
+                                    title="Modifica Articolo">
+                                <i data-lucide="pen-tool" class="w-4 h-4"></i>
+                            </button>
+                        ` : `
+                            <button onclick="handleResume(${item.number})"
+                                    class="flex items-center gap-1 px-3 py-1 text-sm border rounded-md hover:bg-gray-50">
+                                <i data-lucide="play" class="w-4 h-4"></i>
+                                Riprendi
+                            </button>
+                        `}
+
+                        <button onclick="showDeleteModal(${item.number})"
+                                class="icon-button ml-2"
+                                title="Elimina">
+                            <i data-lucide="trash-2" class="w-4 h-4 text-red-500"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Reinizializza le icone Lucide
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // Event Listeners
+        elements.toggleView.addEventListener('click', async () => {
+            state.view = state.view === 'artifacts' ? 'chats' : 'artifacts';
+            await loadItems(); // loadItems ora include la lettura automatica
+        });
+
+        elements.prevPage.addEventListener('click', async () => {
+            await previousPage();
+        });
+
+        elements.nextPage.addEventListener('click', async () => {
+            await nextPage();
+        });
+        
+        elements.globalMute.addEventListener('click', () => 
+            handleGlobalAudio(state.isMuted ? 'unmute' : 'mute')
+        );
+
+        elements.globalStop.addEventListener('click', () => 
+            handleGlobalAudio('stop')
+        );
+
+        // Aggiorna l'event listener per il pulsante restart
+        elements.restartPlayback.addEventListener('click', readCurrentPage);
+
+        // Initialize Lucide on load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            } else {
+                console.warn('Lucide not available, falling back to emoji');
+                replaceIconsWithEmoji();
+            }
+        });
+
+        // Wait for pywebview to be ready
+        window.addEventListener('pywebviewready', async () => {
+            console.log('pywebview ready, loading items...');
+            try {
+                await loadItems();
+            } catch (error) {
+                console.error('Error during initialization:', error);
+            }
+        });
+    </script>
+</body>
+</html>

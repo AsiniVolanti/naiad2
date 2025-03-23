@@ -1,0 +1,4 @@
+# Modifiche all'asino di febbraio 2025
+## Gestione artefatti e sessioni 
+Questo potrebbe essere il prototipo della finestra per la selezione degli artefatti. Quando richiesta da un pulsante grid3, appare la finestra pop up e vengono letti i titoli degli artefatti. Puoi selezionare l'icona del megafono per farlo leggere, o l'icona del pennello o del pennino per far partire una sessione di scrittura creativa scrittura articoli e modificare l'artefatto creando una nuova versione. Gli artefatti escono 9 alla volta in ordine cronologico dal più vecchio al più recente. Potrai andare avanti o indietro nell'elenco con i pulsanti freccia in cima alla pagina. Il pulsante con la X chiude la finestra.
+In modo analogo per le sessioni. Che avrà invece icone indicanti il tipo di sessione e la possibilità di cancellarle oltre che di riprenderle.

@@ -1,0 +1,50 @@
+paths:
+  data: C:/NAIAD/db
+  logs: C:/NAIAD/logs
+  examples: C:/NAIAD/examples
+
+grid3:
+  trigger_key: F2  # Key to signal GRID3
+  prompt_key:  F3   # Key to trigger prompt processing
+  command_key: F4  # Key for system commands
+
+ai_services:
+  default: anthropic  # Default service to use
+  anthropic:
+    enabled: true
+    api_key: ""
+    model: claude-3-sonnet-20240229
+    max_tokens: 4096
+  openai:
+    enabled: false
+    api_key: ""
+    model: gpt-4-turbo-preview
+    max_tokens: 4096
+  perplexity:
+    enabled: false
+    api_key: ""
+    model: pplx-70b-online
+    max_tokens: 4096
+
+speech:
+  enabled: true
+  provider: system  # system, azure, or elevenlabs
+  voice: it-IT-DiegoNeural
+  rate: 1.0
+  volume: 1.0
+
+database:
+  path: C:/NAIAD/db/naiad.db
+  backup_enabled: true
+  backup_interval: 86400  # 24 hours in seconds
+
+monitoring:
+  log_level: INFO
+  clipboard_interval: 0.1  # seconds
+  max_log_size: 10485760  # 10MB
+  max_log_files: 5
+
+session:
+  timeout: 3600  # 1 hour in seconds
+  max_history: 100  # Maximum number of interactions to keep in memory
+  auto_save: true
