@@ -52,33 +52,35 @@ def run_command(cmd, logger, cwd=None):
     """Esegue un comando di sistema e gestisce l'output"""
     logger.info(f"Esecuzione comando: {' '.join(str(x) for x in cmd)}")
     try:
-        process = subprocess.Popen(
+        # Usa subprocess.run invece di Popen per semplicità
+        result = subprocess.run(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
             cwd=cwd,
-            bufsize=1
+            check=False  # Non sollevare eccezioni per codici di uscita non zero
         )
         
-        # Gestione dell'output in tempo reale
-        for line in process.stdout:
-            line = line.strip()
-            if line and not line.startswith('WARNING:'):  # Ignora i warning non critici
+        # Registra output standard
+        for line in result.stdout.splitlines():
+            if line and not line.startswith('WARNING:'):
                 logger.info(line)
-                
-        # Gestione degli errori
-        stderr_output = process.stderr.read()
-        if stderr_output:
-            for line in stderr_output.splitlines():
-                if 'ERROR:' in line or 'CRITICAL:' in line:
-                    logger.error(line)
-                    
-        rc = process.wait()
-        if rc != 0:
-            logger.error(f"Comando fallito con codice di uscita: {rc}")
-            raise subprocess.CalledProcessError(rc, cmd)
+        
+        # Registra errori
+        for line in result.stderr.splitlines():
+            if 'ERROR:' in line or 'CRITICAL:' in line:
+                logger.error(line)
+            elif line:
+                logger.warning(line)
+        
+        # Gestisci il codice di uscita
+        if result.returncode != 0:
+            logger.error(f"Comando fallito con codice di uscita: {result.returncode}")
+            raise subprocess.CalledProcessError(result.returncode, cmd)
             
+        return result
+        
     except Exception as e:
         logger.error(f"Errore nell'esecuzione del comando: {e}")
         raise
@@ -113,7 +115,8 @@ def build_naiad(args, logger):
             'PyInstaller',
             '--clean',
             '--noconfirm',
-            '--log-level=ERROR',  # Mostra solo errori reali
+            '--log-level=DEBUG',  # Cambia da ERROR a DEBUG per informazioni dettagliate
+            # Rimosso usando uno spec '--debug=all',         # Aggiunge debugging completo
             str(spec_file.resolve())
         ]
         

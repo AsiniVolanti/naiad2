@@ -61,8 +61,12 @@ class LocalTTSProvider:
                     self.logger.info(f"Voce {idx}: ID={voice.id}, Nome={voice.name}, Lingua={voice.languages}")
                 
                 # Priorità: voce italiana, poi qualsiasi voce
+                giorgio_voice = next((v for v in voices if 'giorgio' in v.name.lower()), None)
                 italian_voice = next((v for v in voices if 'ital' in v.name.lower()), None)
-                if italian_voice:
+                if giorgio_voice:
+                    self.logger.info(f"Selezionata voce di Giorgio: {giorgio_voice.name}")
+                    self.engine.setProperty('voice', giorgio_voice.id)
+                elif italian_voice:
                     self.logger.info(f"Selezionata voce italiana: {italian_voice.name}")
                     self.engine.setProperty('voice', italian_voice.id)
                 elif voices:
