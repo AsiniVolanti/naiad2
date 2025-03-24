@@ -91,6 +91,9 @@ mkdir "C:\Program Files\NAIAD"
 # Copia l'eseguibile e i file necessari
 xcopy /E /I "dist\NAIAD\*" "C:\Program Files\NAIAD\"
 
+# Copia i comandi
+xcopy /E /I "cmd\*" "C:\Program Files\NAIAD\cmd\"
+
 # Copia gli assets nella directory ProgramData
 xcopy /E /I "assets\*" "C:\ProgramData\NAIAD\assets\"
 ```
