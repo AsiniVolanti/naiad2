@@ -142,6 +142,7 @@ class Api:
         """Legge un artefatto specifico"""
         try:
             filename, content = self.app.artifact_manager.get_artifact_by_number(number)
+            self.app.set_clipboard_content(content)
             self.app.tts.speak(content)
             return {'success': True, 'content': content}
         except Exception as e:
